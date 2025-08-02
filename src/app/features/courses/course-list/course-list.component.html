@@ -1,0 +1,211 @@
+<div class="course-list-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="title-section">
+      <h1 class="page-title">Course Management</h1>
+      <p class="page-subtitle">Manage and organize your learning content</p>
+    </div>
+    
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="createCourse()" class="create-button">
+        <mat-icon>add</mat-icon>
+        Create Course
+      </button>
+      
+      <button mat-icon-button (click)="refresh()" matTooltip="Refresh">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <mat-card class="filters-card">
+    <mat-card-content>
+      <div class="filters-container">
+        <!-- Search -->
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search courses</mat-label>
+          <input matInput [formControl]="searchControl" placeholder="Search by title, description, or instructor">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <!-- Category Filter -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Category</mat-label>
+          <mat-select [formControl]="categoryControl">
+            <mat-option value="">All Categories</mat-option>
+            <mat-option *ngFor="let category of categories" [value]="category">
+              {{ category }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Difficulty Filter -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Difficulty</mat-label>
+          <mat-select [formControl]="difficultyControl">
+            <mat-option value="">All Levels</mat-option>
+            <mat-option *ngFor="let difficulty of difficulties" [value]="difficulty">
+              {{ difficulty }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Clear Filters -->
+        <button mat-stroked-button (click)="clearFilters()" class="clear-filters-btn">
+          <mat-icon>clear</mat-icon>
+          Clear Filters
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading()" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading courses...</p>
+  </div>
+
+  <!-- Error Message -->
+  <mat-card *ngIf="error()" class="error-card">
+    <mat-card-content>
+      <div class="error-content">
+        <mat-icon color="warn">error</mat-icon>
+        <div>
+          <h3>Error Loading Courses</h3>
+          <p>{{ error() }}</p>
+          <button mat-raised-button color="primary" (click)="refresh()">
+            Try Again
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Courses Table -->
+  <mat-card *ngIf="!loading() && !error()" class="table-card">
+    <mat-card-content>
+      <!-- Results Info -->
+      <div class="results-info">
+        <p>Showing {{ dataSource.data.length }} course(s)</p>
+      </div>
+
+      <!-- Table -->
+      <div class="table-container">
+        <table mat-table [dataSource]="dataSource" matSort class="courses-table">
+          
+          <!-- Title Column -->
+          <ng-container matColumnDef="title">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Course Title</th>
+            <td mat-cell *matCellDef="let course">
+              <div class="course-title-cell">
+                <strong>{{ course.title }}</strong>
+                <small class="course-description">{{ course.description | slice:0:100 }}...</small>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Category Column -->
+          <ng-container matColumnDef="category">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Category</th>
+            <td mat-cell *matCellDef="let course">
+              <mat-chip-set>
+                <mat-chip>{{ course.category }}</mat-chip>
+              </mat-chip-set>
+            </td>
+          </ng-container>
+
+          <!-- Instructor Column -->
+          <ng-container matColumnDef="instructor">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Instructor</th>
+            <td mat-cell *matCellDef="let course">{{ course.instructor }}</td>
+          </ng-container>
+
+          <!-- Difficulty Column -->
+          <ng-container matColumnDef="difficulty">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Difficulty</th>
+            <td mat-cell *matCellDef="let course">
+              <mat-chip-set>
+                <mat-chip [color]="getDifficultyColor(course.difficulty)" selected>
+                  {{ course.difficulty }}
+                </mat-chip>
+              </mat-chip-set>
+            </td>
+          </ng-container>
+
+          <!-- Duration Column -->
+          <ng-container matColumnDef="duration">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Duration</th>
+            <td mat-cell *matCellDef="let course">{{ formatDuration(course.duration) }}</td>
+          </ng-container>
+
+          <!-- Price Column -->
+          <ng-container matColumnDef="price">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Price</th>
+            <td mat-cell *matCellDef="let course">
+              <span [class.free-price]="course.price === 0">
+                {{ course.price === 0 ? 'Free' : formatPrice(course.price) }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Published Status Column -->
+          <ng-container matColumnDef="isPublished">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let course">
+              <mat-slide-toggle 
+                [checked]="course.isPublished"
+                (change)="togglePublishStatus(course)"
+                [color]="course.isPublished ? 'primary' : 'warn'">
+                {{ course.isPublished ? 'Published' : 'Draft' }}
+              </mat-slide-toggle>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let course">
+              <div class="action-buttons">
+                <button mat-icon-button (click)="viewCourse(course)" matTooltip="View Course">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                
+                <button mat-icon-button (click)="editCourse(course)" matTooltip="Edit Course">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                
+                <button mat-icon-button 
+                        (click)="deleteCourse(course)" 
+                        matTooltip="Delete Course"
+                        class="delete-button">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+
+        <!-- No Data Message -->
+        <div *ngIf="dataSource.data.length === 0" class="no-data">
+          <mat-icon>school</mat-icon>
+          <h3>No courses found</h3>
+          <p>Start by creating your first course or adjust your search filters.</p>
+          <button mat-raised-button color="primary" (click)="createCourse()">
+            Create First Course
+          </button>
+        </div>
+      </div>
+
+      <!-- Paginator -->
+      <mat-paginator 
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        [pageSize]="10"
+        showFirstLastButtons>
+      </mat-paginator>
+    </mat-card-content>
+  </mat-card>
+</div> 

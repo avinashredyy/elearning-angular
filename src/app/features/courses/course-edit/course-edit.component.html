@@ -1,0 +1,290 @@
+<div class="course-edit-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="breadcrumb">
+      <a mat-button routerLink="/courses" class="breadcrumb-link">
+        <mat-icon>arrow_back</mat-icon>
+        Back to Courses
+      </a>
+    </div>
+    
+    <div class="title-section" *ngIf="courseDisplayInfo()">
+      <h1 class="page-title">Edit Course: {{ courseDisplayInfo()?.title }}</h1>
+      <div class="course-meta">
+        <mat-chip-set>
+          <mat-chip [color]="courseDisplayInfo()?.status === 'Published' ? 'primary' : 'accent'" selected>
+            {{ courseDisplayInfo()?.status }}
+          </mat-chip>
+        </mat-chip-set>
+        <span class="last-updated">Last updated: {{ courseDisplayInfo()?.lastUpdated }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading course data...</p>
+  </div>
+
+  <!-- Course Not Found -->
+  <mat-card *ngIf="courseNotFound()" class="error-card">
+    <mat-card-content>
+      <div class="error-content">
+        <mat-icon color="warn" class="error-icon">error</mat-icon>
+        <div>
+          <h2>Course Not Found</h2>
+          <p>The course you're looking for doesn't exist or you don't have permission to edit it.</p>
+          <button mat-raised-button color="primary" routerLink="/courses">
+            Back to Courses
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading() && !courseNotFound()" class="content-grid">
+    
+    <!-- Form Section -->
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>Course Information</mat-card-title>
+        <mat-card-subtitle>
+          Update the course details below
+          <span *ngIf="hasChanges()" class="unsaved-indicator">• Unsaved changes</span>
+        </mat-card-subtitle>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <form [formGroup]="courseForm" (ngSubmit)="onSubmit()" class="course-form">
+          
+          <!-- Title Field -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Course Title *</mat-label>
+            <input matInput 
+                   formControlName="title" 
+                   placeholder="Enter course title"
+                   maxlength="200">
+            <mat-hint align="end">{{ getTitleCharacterCount() }}</mat-hint>
+            <mat-error *ngIf="title?.invalid && title?.touched">
+              {{ getTitleErrorMessage() }}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Description Field -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Course Description *</mat-label>
+            <textarea matInput 
+                      formControlName="description"
+                      placeholder="Describe what students will learn in this course"
+                      rows="4"
+                      maxlength="2000">
+            </textarea>
+            <mat-hint align="end">{{ getDescriptionCharacterCount() }}</mat-hint>
+            <mat-error *ngIf="description?.invalid && description?.touched">
+              {{ getDescriptionErrorMessage() }}
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Category and Instructor Row -->
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Category *</mat-label>
+              <mat-select formControlName="category">
+                <mat-option value="">Select Category</mat-option>
+                <mat-option *ngFor="let category of categories()" [value]="category">
+                  {{ category }}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="category?.invalid && category?.touched">
+                Category is required
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Instructor *</mat-label>
+              <mat-select formControlName="instructor">
+                <mat-option value="">Select Instructor</mat-option>
+                <mat-option *ngFor="let instructor of instructors()" [value]="instructor">
+                  {{ instructor }}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="instructor?.invalid && instructor?.touched">
+                Instructor is required
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Difficulty Field -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Difficulty Level *</mat-label>
+            <mat-select formControlName="difficulty">
+              <mat-option *ngFor="let level of difficulties" [value]="level.value">
+                <div class="difficulty-option">
+                  <span class="difficulty-label">{{ level.label }}</span>
+                  <small class="difficulty-description">{{ level.description }}</small>
+                </div>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Duration and Price Row -->
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Duration (hours) *</mat-label>
+              <input matInput 
+                     type="number" 
+                     formControlName="duration"
+                     step="0.5"
+                     min="0.5"
+                     max="1000"
+                     placeholder="1.5">
+              <mat-hint>Estimated time to complete</mat-hint>
+              <mat-error *ngIf="duration?.invalid && duration?.touched">
+                {{ getDurationErrorMessage() }}
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Price (USD) *</mat-label>
+              <input matInput 
+                     type="number" 
+                     formControlName="price"
+                     step="1"
+                     min="0"
+                     max="10000"
+                     placeholder="0">
+              <span matPrefix>$&nbsp;</span>
+              <mat-hint>Set to 0 for free course</mat-hint>
+              <mat-error *ngIf="price?.invalid && price?.touched">
+                {{ getPriceErrorMessage() }}
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Publication Status -->
+          <div class="publication-section">
+            <mat-slide-toggle formControlName="isPublished" color="primary">
+              <span class="toggle-label">
+                Course is published and visible to students
+              </span>
+            </mat-slide-toggle>
+            <p class="toggle-hint">
+              Published courses are visible to students. Draft courses are only visible to instructors and administrators.
+            </p>
+          </div>
+
+        </form>
+      </mat-card-content>
+
+      <!-- Form Actions -->
+      <mat-card-actions class="form-actions">
+        <button mat-button 
+                type="button" 
+                (click)="onCancel()"
+                class="cancel-button">
+          Cancel
+        </button>
+        
+        <button mat-button 
+                type="button" 
+                (click)="onReset()"
+                [disabled]="!hasChanges()">
+          Reset Changes
+        </button>
+
+        <button mat-button 
+                type="button" 
+                (click)="viewCourse()"
+                class="view-button">
+          <mat-icon>visibility</mat-icon>
+          View Course
+        </button>
+        
+        <div class="spacer"></div>
+
+        <button mat-button 
+                type="button" 
+                (click)="onDelete()"
+                class="delete-button">
+          <mat-icon>delete</mat-icon>
+          Delete
+        </button>
+        
+        <button mat-raised-button 
+                color="primary" 
+                type="submit"
+                [disabled]="!canSave()"
+                (click)="onSubmit()"
+                class="save-button">
+          <mat-spinner diameter="20" *ngIf="saving()" class="button-spinner"></mat-spinner>
+          <span *ngIf="!saving()">Save Changes</span>
+          <span *ngIf="saving()">Saving...</span>
+        </button>
+      </mat-card-actions>
+    </mat-card>
+
+    <!-- Preview Section -->
+    <mat-card class="preview-card">
+      <mat-card-header>
+        <mat-card-title>Course Preview</mat-card-title>
+        <mat-card-subtitle>This is how your course will appear to students</mat-card-subtitle>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <div class="course-preview">
+          <!-- Course Header -->
+          <div class="preview-header">
+            <h2 class="preview-title">{{ getPreviewData().title }}</h2>
+            <div class="preview-meta">
+              <mat-chip-set>
+                <mat-chip [color]="getPreviewData().difficulty === 'Advanced' ? 'warn' : 'primary'" selected>
+                  {{ getPreviewData().difficulty }}
+                </mat-chip>
+                <mat-chip>{{ getPreviewData().category }}</mat-chip>
+              </mat-chip-set>
+            </div>
+          </div>
+
+          <!-- Course Details -->
+          <div class="preview-details">
+            <div class="detail-item">
+              <mat-icon>person</mat-icon>
+              <span>{{ getPreviewData().instructor }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <mat-icon>schedule</mat-icon>
+              <span>{{ getPreviewData().duration }}</span>
+            </div>
+            
+            <div class="detail-item">
+              <mat-icon>attach_money</mat-icon>
+              <span class="price" [class.free]="getPreviewData().price === 'Free'">
+                {{ getPreviewData().price }}
+              </span>
+            </div>
+            
+            <div class="detail-item">
+              <mat-icon>{{ getPreviewData().isPublished ? 'visibility' : 'visibility_off' }}</mat-icon>
+              <span>{{ getPreviewData().isPublished ? 'Published' : 'Draft' }}</span>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="preview-description">
+            <h3>About this course</h3>
+            <p>{{ getPreviewData().description }}</p>
+          </div>
+
+          <!-- Change Indicator -->
+          <div *ngIf="hasChanges()" class="changes-indicator">
+            <mat-icon>edit</mat-icon>
+            <span>Preview shows unsaved changes</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div> 

@@ -1,24 +1,12 @@
 import { Component } from '@angular/core';
-import { MatCardModule } from '@angular/material/card';
+import { CourseListComponent } from './course-list/course-list.component';
 
 @Component({
   selector: 'app-courses',
   standalone: true,
-  imports: [MatCardModule],
+  imports: [CourseListComponent],
   template: `
-    <div class="courses-container">
-      <h1>Courses</h1>
-      <mat-card>
-        <mat-card-content>
-          <p>Course management will be implemented in Milestone 2</p>
-        </mat-card-content>
-      </mat-card>
-    </div>
-  `,
-  styles: [`
-    .courses-container {
-      padding: 20px;
-    }
-  `]
+    <app-course-list></app-course-list>
+  `
 })
 export class CoursesComponent {}

@@ -1,0 +1,52 @@
+<div class="confirm-dialog" (keydown)="onKeydown($event)" tabindex="0">
+  <!-- Dialog Header -->
+  <div mat-dialog-title class="dialog-header">
+    <div class="header-content">
+      <mat-icon [color]="iconColor()" class="dialog-icon">
+        {{ dialogIcon() }}
+      </mat-icon>
+      <h2 class="dialog-title">{{ data.title }}</h2>
+    </div>
+  </div>
+
+  <!-- Dialog Content -->
+  <mat-dialog-content class="dialog-content">
+    <!-- Main Message -->
+    <p class="main-message">{{ data.message }}</p>
+    
+    <!-- Additional Information -->
+    <p *ngIf="data.additionalInfo" class="additional-info">
+      {{ data.additionalInfo }}
+    </p>
+
+    <!-- Optional Checkbox for Destructive Actions -->
+    <div *ngIf="data.showCheckbox" class="confirmation-checkbox">
+      <mat-checkbox 
+        [checked]="checkboxValue()"
+        (change)="onCheckboxChange($event.checked)"
+        color="warn">
+        {{ data.checkboxText || 'I understand the consequences' }}
+      </mat-checkbox>
+    </div>
+  </mat-dialog-content>
+
+  <!-- Dialog Actions -->
+  <mat-dialog-actions class="dialog-actions">
+    <button 
+      mat-button 
+      (click)="onCancel()"
+      class="cancel-button">
+      {{ cancelButtonText() }}
+    </button>
+    
+    <button 
+      mat-raised-button 
+      [color]="confirmButtonColor()"
+      [disabled]="!canConfirm()"
+      (click)="onConfirm()"
+      class="confirm-button"
+      [class.destructive]="data.isDestructive">
+      {{ confirmButtonText() }}
+    </button>
+  </mat-dialog-actions>
+</div> 

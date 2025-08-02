@@ -6,6 +6,13 @@ export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'health', component: HealthComponent },
-  { path: 'courses', loadComponent: () => import('./features/courses/courses.component').then(m => m.CoursesComponent) },
+  { 
+    path: 'courses', 
+    children: [
+      { path: '', loadComponent: () => import('./features/courses/course-list/course-list.component').then(m => m.CourseListComponent) },
+      { path: 'create', loadComponent: () => import('./features/courses/course-create/course-create.component').then(m => m.CourseCreateComponent) },
+      { path: ':id/edit', loadComponent: () => import('./features/courses/course-edit/course-edit.component').then(m => m.CourseEditComponent) }
+    ]
+  },
   { path: '**', redirectTo: '/dashboard' }
 ];
